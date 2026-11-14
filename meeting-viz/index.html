@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>회의 정리 뷰어 · T1 · T2</title>
+<title>회의 정리 뷰어 · nodus</title>
 <style>
 body{margin:0;font-family:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#F3F2EF;color:#1b1b1f}
 .pg{max-width:1280px;margin:0 auto;padding:28px clamp(16px,4vw,48px) 56px}*{box-sizing:border-box}
@@ -23,13 +23,32 @@ mark{background:#FFE58F;color:#1b1b1f;border-radius:3px;padding:0 2px}
 .ctx{font-size:14px;line-height:1.7;color:#33333b;background:#F7F7F9;border-radius:10px;padding:12px 14px;overflow-wrap:anywhere}
 .small{font-size:12px;color:#55555f;line-height:1.6}.bar{height:10px;border-radius:5px;background:#1a56c4}
 input.s{font:inherit;font-size:14px;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid #cfcfd6;flex:1 1 220px;min-width:0}
+.fx{background:#DDF3E4;color:#0d4a23;border-radius:3px;padding:0 2px;font-weight:600;cursor:help}
+.fx.ai{background:#DCE8FF;color:#0f3f94}
+.sg{border-bottom:2px dotted #b36b00;cursor:help}.sp{border-bottom:2px dotted #8a8a96;cursor:help}
+.raw{border-bottom:2px solid #e0a100;cursor:help}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:8px;border-bottom:1px solid #ECECF0;vertical-align:top}th{color:#55555f;font-weight:600}
 </style></head><body><div class="pg" id="app"></div>
 <script src="data.js"></script>
 <script>
 var CN={C:'확정','C?':'확정(추정)',P:'제안',H:'보류',A:'후속 요청',Q:'확인 질문',E:'전사 의심'};
 var PAL=['#D6E4FF','#DCEFE3','#FBE7C6','#E9DDF7','#FAD9D5','#D3EEF0','#EAEAD0','#E3E3E8','#D6E4FF','#DCEFE3'];
-var S={t:'T1',sel:null,blk:null,kind:'전체',q:'',code:'전체',all:false};
+var S={t:DATA.order[0],sel:null,blk:null,kind:'전체',q:'',code:'전체',all:false,mode:'fix'};
+var STN={confirmed:'사람 확인',auto:'자동 적용',suggest:'확인 대기',suspect:'의심(교정안 없음)'};
+function applied(f){return (f.st==='confirmed'||f.st==='auto')&&f.fix}
+// 블록 원문의 [a,z) 구간을 그린다. 교정은 원문 좌표(s,e)로 겹쳐 표시하고, [m0,m1)은 인용 강조.
+function rich(b,a,z,m0,m1){
+var tx=b.text,fx=(b.fixes||[]).filter(function(f){return f.s<z&&f.e>a}).sort(function(x,y){return x.s-y.s});
+fx.forEach(function(f){a=Math.min(a,f.s);z=Math.max(z,f.e)});
+function plain(s,e){if(m0==null||e<=m0||s>=m1)return esc(tx.slice(s,e));var x=Math.max(s,m0),y=Math.min(e,m1);return esc(tx.slice(s,x))+'<mark>'+esc(tx.slice(x,y))+'</mark>'+esc(tx.slice(y,e))}
+var out='',p=a;
+fx.forEach(function(f){out+=plain(p,f.s);var raw=tx.slice(f.s,f.e),h;
+if(S.mode==='raw')h='<span class="raw" title="'+esc(STN[f.st]+(f.fix?' → '+f.fix:''))+'">'+esc(raw)+'</span>';
+else if(applied(f))h='<span class="fx'+(f.st==='auto'?' ai':'')+'" title="'+esc('전사 원문: '+raw+' · '+STN[f.st])+'">'+esc(f.fix)+'</span>';
+else h='<span class="'+(f.st==='suggest'?'sg':'sp')+'" title="'+esc(STN[f.st]+(f.fix?': '+f.fix:''))+'">'+esc(raw)+'</span>';
+out+=(m0!=null&&f.s<m1&&f.e>m0)?'<mark>'+h+'</mark>':h;p=f.e});
+return (a>0?'…':'')+out+plain(p,z)+(z<tx.length?'…':'')}
+function flat(b){if(S.mode==='raw')return b.text;var o='',p=0;(b.fixes||[]).slice().sort(function(x,y){return x.s-y.s}).forEach(function(f){if(applied(f)){o+=b.text.slice(p,f.s)+f.fix;p=f.e}});return o+b.text.slice(p)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function fmt(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60,p=function(n){return String(n).padStart(2,'0')};return h?h+':'+p(m)+':'+p(r):m+':'+p(r)}
 function cls(t){return t==='확정'?'ok':t==='확정(추정)'?'wr':t==='제안'?'bl':'gy'}
@@ -40,39 +59,47 @@ window.act=function(k,v){H[k](v)};
 function set(o){for(var k in o)S[k]=o[k];render()}
 function render(){
 H={};var t=S.t,M=DATA.meetings[t],items=DATA.items.filter(function(i){return i.t===t});
-var selItem=S.blk!==null?null:(items.find(function(i){return i.id===S.sel})||items.find(function(i){return i.type==='확정'})||items[0]);
-var blk=M.blocks[S.blk!==null?S.blk:selItem.block],d;
-var corr=DATA.corr.filter(function(c){return c.t===t&&(c.ts===blk.ts||(selItem&&c.ts===selItem.ts))});
+var selItem=S.blk!==null?null:(items.find(function(i){return i.id===S.sel})||items.find(function(i){return i.type==='확정'})||items[0]||null);
+var blk=M.blocks[S.blk!==null?S.blk:selItem?selItem.block:0],d;
+var allCorr=DATA.corr.filter(function(c){return c.t===t});
+var corr=allCorr.filter(function(c){return c.block===blk.i});
 var ctx,tbl='',when,quote='',summary='',type;
 if(selItem){var tx=blk.text,pos=Math.max(0,tx.indexOf(selItem.quote)),ql=selItem.quote.length;
-ctx=esc((pos>160?'…':'')+tx.slice(Math.max(0,pos-160),pos))+'<mark>'+esc(selItem.quote)+'</mark>'+esc(tx.slice(pos+ql,pos+ql+160)+(tx.length>pos+ql+160?'…':''));
+ctx=rich(blk,Math.max(0,pos-160),Math.min(tx.length,pos+ql+160),pos,pos+ql);
 type=selItem.type;when=selItem.id+' · '+selItem.ts+' · '+blk.sec_name;quote='<div class="quote">“'+esc(selItem.quote)+'”</div>';summary='<div class="small" style="margin-bottom:8px">AI 요약: '+esc(selItem.summary)+'</div>';
 tbl=selItem.kind==='결정'?'<table><tr><th>확인 질문</th><td>'+esc(selItem.q)+'</td></tr><tr><th>응답 기록</th><td>'+esc(selItem.resp)+'</td></tr></table>':'<table><tr><th>기한(발화)</th><td>'+esc(selItem.due)+'</td></tr><tr><th>담당(발화)</th><td>'+esc(selItem.who)+'</td></tr></table>';
-}else{ctx=esc(blk.text);type='원문 블록';when=blk.ts+' · '+blk.sec_name}
+}else{ctx=rich(blk,0,blk.text.length,null,null);type='원문 블록';when=blk.ts+' · '+blk.sec_name}
 var cnt=function(k){return items.filter(function(i){return i.type===k}).length};
-var kp=[[fmt(M.total),'회의 길이'],[M.blocks.length,'타임스탬프 블록'],[cnt('확정'),'확정'],[cnt('확정(추정)'),'확정(추정)'],[cnt('제안'),'제안'],[cnt('보류'),'보류'],[items.filter(function(i){return i.kind==='후속'}).length,'후속 요청']];
+var kp=[[fmt(M.total),'회의 길이'],[M.blocks.length,'타임스탬프 블록'],[cnt('확정'),'확정'],[cnt('확정(추정)'),'확정(추정)'],[cnt('제안'),'제안'],[cnt('보류'),'보류'],[items.filter(function(i){return i.kind==='후속'}).length,'후속 요청'],[allCorr.filter(applied).length+' / '+allCorr.filter(function(c){return !applied(c)}).length,'전사 교정 적용 / 대기']];
 var secs=M.sections.map(function(x,i){var w=(x.end-x.start)/M.total*100;return '<div title="'+esc(x.name+' '+fmt(x.end-x.start))+'" style="width:'+w+'%;background:'+PAL[i%10]+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;overflow:hidden;white-space:nowrap;border-right:1px solid #fff">'+(w>9?esc(x.name):'')+'</div>'}).join('');
 var sorted=items.slice().sort(function(a,b){return a.sec-b.sec});
-var marks=sorted.map(function(it,i){var dec=it.kind==='결정',k=on(function(){set({sel:it.id,blk:null})});return '<button class="mk" aria-label="'+esc(it.id+' '+it.type+' '+it.ts)+'" aria-current="'+(!!selItem&&selItem.id===it.id)+'" onclick="act(\''+k+'\')" style="left:calc('+(it.sec/M.total*100)+'% - 10px);top:'+(i%2?22:2)+'px;background:'+col(it.type)+';border-radius:'+(dec?'50%':'3px')+';'+(dec?'':'transform:rotate(45deg) scale(.85)')+'"></button>'}).join('');
+var laneW=Math.max(200,Math.min(1280,document.documentElement.clientWidth)-2*Math.max(16,Math.min(48,document.documentElement.clientWidth*.04))-40),lanes=[];
+var marks=sorted.map(function(it){var dec=it.kind==='결정',k=on(function(){set({sel:it.id,blk:null})});var x=it.sec/M.total*laneW,i=0;while(i<lanes.length&&x-lanes[i]<24)i++;lanes[i]=x;return '<button class="mk" aria-label="'+esc(it.id+' '+it.type+' '+it.ts)+'" aria-current="'+(!!selItem&&selItem.id===it.id)+'" onclick="act(\''+k+'\')" style="left:calc('+(it.sec/M.total*100)+'% - 10px);top:'+(2+i*24)+'px;background:'+col(it.type)+';border-radius:'+(dec?'50%':'3px')+';'+(dec?'':'transform:rotate(45deg) scale(.85)')+'"></button>'}).join('');
 var chips=function(list,cur,key,lab){return list.map(function(c){var k=on(function(){var o={all:false};o[key]=c;set(o)});return '<button class="chip" aria-pressed="'+(cur===c)+'" onclick="act(\''+k+'\')">'+esc(lab(c))+'</button>'}).join('')};
 var rows=items.filter(function(i){return S.kind==='전체'||i.kind===S.kind}).map(function(it){var k=on(function(){set({sel:it.id,blk:null})});return '<button class="item" aria-current="'+(!!selItem&&selItem.id===it.id)+'" onclick="act(\''+k+'\')"><span style="flex:1;min-width:0"><span style="display:block;font-size:15px;font-weight:500;line-height:1.4">'+esc(it.summary)+'</span><span class="small">'+it.id+' · '+esc(it.ts)+'</span></span><span class="b '+cls(it.type)+'">'+esc(it.type)+'</span></button>'}).join('');
 var sm={};M.sections.forEach(function(x){sm[x.name]=(sm[x.name]||0)+(x.end-x.start)});
 var secRows=Object.keys(sm).map(function(n){return '<tr><td>'+esc(n)+'</td><td>'+fmt(sm[n])+'</td><td><div class="row" style="flex-wrap:nowrap;gap:8px"><div class="bar" style="width:'+Math.max(2,sm[n]/M.total*160)+'px"></div><span>'+(sm[n]/M.total*100).toFixed(1)+'%</span></div></td></tr>'}).join('');
-var q=S.q.trim(),bl2=M.blocks.filter(function(b){return(S.code==='전체'||b.codes.indexOf(S.code)>=0)&&(!q||b.text.indexOf(q)>=0)});
+var q=S.q.trim(),bl2=M.blocks.filter(function(b){return(S.code==='전체'||b.codes.indexOf(S.code)>=0)&&(!q||b.text.indexOf(q)>=0||flat(b).indexOf(q)>=0)});
 var lim=S.all?bl2.length:60;
-var brs=bl2.slice(0,lim).map(function(b){var k=on(function(){set({blk:b.i,sel:null});window.scrollTo({top:0,behavior:'smooth'})});return '<button class="item" style="align-items:flex-start" aria-current="'+(S.blk===b.i)+'" onclick="act(\''+k+'\')"><span style="width:64px;flex:none;font-size:13px;font-weight:600;color:#1a56c4">'+esc(b.ts)+'</span><span style="flex:1;min-width:0;font-size:14px;line-height:1.6;color:#33333b">'+esc(b.text.length>140?b.text.slice(0,140)+'…':b.text)+'</span><span class="small" style="flex:none;max-width:120px;text-align:right">'+esc(b.codes.map(function(c){return CN[c]}).join(' · '))+'</span></button>'}).join('');
+var brs=bl2.slice(0,lim).map(function(b){var k=on(function(){set({blk:b.i,sel:null});window.scrollTo({top:0,behavior:'smooth'})});return '<button class="item" style="align-items:flex-start" aria-current="'+(S.blk===b.i)+'" onclick="act(\''+k+'\')"><span style="width:64px;flex:none;font-size:13px;font-weight:600;color:#1a56c4">'+esc(b.ts)+'</span><span style="flex:1;min-width:0;font-size:14px;line-height:1.6;color:#33333b">'+(function(x){return esc(x.length>140?x.slice(0,140)+'…':x)})(flat(b))+'</span><span class="small" style="flex:none;max-width:120px;text-align:right">'+esc(b.codes.map(function(c){return CN[c]}).join(' · '))+'</span></button>'}).join('');
 var more=(!S.all&&bl2.length>60)?'<button class="chip" onclick="act(\''+on(function(){set({all:true})})+'\')">전체 표시</button>':'';
-var corrHtml=corr.length?'<div class="small" style="margin:12px 0 4px">Ro 정정 (원문을 바꾸지 않고 따로 표시)</div>'+corr.map(function(c){return '<div class="ctx" style="margin-bottom:6px">전사 “'+esc(c.raw)+'” → <b>'+esc(c.fix)+'</b><div class="small">'+esc(c.note)+'</div></div>'}).join(''):'';
+var stc=function(c){return c.st==='confirmed'?'ok':c.st==='auto'?'bl':c.st==='suggest'?'wr':'gy'};
+var corrHtml=corr.length?'<div class="small" style="margin:12px 0 4px">이 블록의 전사 교정 (원문을 바꾸지 않고 따로 표시)</div>'+corr.map(function(c){return '<div class="ctx" style="margin-bottom:6px">전사 “'+esc(c.raw)+'” → <b>'+esc(c.fix||'?')+'</b> <span class="b '+stc(c)+'">'+STN[c.st]+'</span><div class="small">'+esc(c.note)+'</div></div>'}).join(''):'';
+var corrRows=allCorr.map(function(c){var k=on(function(){set({blk:c.block,sel:null});window.scrollTo({top:0,behavior:'smooth'})});return '<tr><td><button class="chip" style="min-height:32px;padding:4px 10px" onclick="act(\''+k+'\')">'+esc(c.ts)+'</button></td><td>'+esc(c.raw)+'</td><td><b>'+esc(c.fix||'?')+'</b></td><td><span class="b '+stc(c)+'">'+STN[c.st]+'</span></td><td class="small">'+esc(c.note)+'</td></tr>'}).join('');
+var A=DATA.audit||{},gates=[];if(A.meetings&&A.meetings[t])for(var g in A.meetings[t])gates.push([g,A.meetings[t][g]]);if(A.outputs)for(var g2 in A.outputs)gates.push([g2,A.outputs[g2]]);
+var gateRows=gates.map(function(g){return '<tr><td>'+esc(g[0])+'</td><td><span class="b '+(g[1][0]?'ok':'wr')+'">'+(g[1][0]?'통과':'실패')+'</span></td><td class="small">'+esc(g[1][1])+'</td></tr>'}).join('');
+var evalRows=Object.keys(A.eval||{}).map(function(k){return '<tr><td>'+esc(k)+'</td><td colspan="2" class="small">'+esc(A.eval[k])+'</td></tr>'}).join('');
 var focus=document.activeElement&&document.activeElement.id==='q';
 document.getElementById('app').innerHTML=
-'<div class="row" style="justify-content:space-between;margin-bottom:16px"><div><h1 style="margin:0;font-size:24px">회의 정리 뷰어</h1><div class="small" style="margin-top:4px">결정·후속 요청을 누르면 전사 원문과 시각이 열립니다. 요약은 AI 1차, 인용은 전사 원문 그대로입니다.</div></div><span class="b wr">AI 1차 · 외부 검증 전</span></div>'+
-'<div class="row" style="margin-bottom:16px" role="group" aria-label="회의 선택">'+['T1','T2'].map(function(k){var h=on(function(){set({t:k,sel:null,blk:null,q:'',code:'전체',kind:'전체',all:false})});return '<button class="tab" aria-pressed="'+(t===k)+'" onclick="act(\''+h+'\')">'+k+' 회의</button>'}).join('')+'</div>'+
+'<div class="row" style="justify-content:space-between;margin-bottom:16px"><div><h1 style="margin:0;font-size:24px">회의 정리 뷰어</h1><div class="small" style="margin-top:4px">결정·후속 요청을 누르면 전사 원문과 시각이 열립니다. 요약은 AI 1차, 큰 인용문은 전사 원문 그대로이고 교정은 색으로 따로 표시합니다.</div></div><span class="b wr">AI 1차 · 외부 검증 전</span></div>'+
+'<div class="row" style="margin-bottom:16px" role="group" aria-label="회의 선택">'+DATA.order.map(function(k){var h=on(function(){set({t:k,sel:null,blk:null,q:'',code:'전체',kind:'전체',all:false})});return '<button class="tab" aria-pressed="'+(t===k)+'" onclick="act(\''+h+'\')">'+esc(DATA.meetings[k].title)+'</button>'}).join('')+'<span style="flex:1"></span>'+[['fix','교정본'],['raw','전사 원문']].map(function(m){var h=on(function(){set({mode:m[0]})});return '<button class="chip" aria-pressed="'+(S.mode===m[0])+'" onclick="act(\''+h+'\')">'+m[1]+'</button>'}).join('')+'</div>'+
 '<div class="row" style="margin-bottom:16px;align-items:stretch">'+kp.map(function(k){return '<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>'}).join('')+'</div>'+
-'<div class="card" style="margin-bottom:16px"><h2 class="h2">타임라인 · 구간별 시간 배분</h2><div style="display:flex;height:44px;border-radius:10px;overflow:hidden">'+secs+'</div><div class="lane" role="group" aria-label="결정과 후속 요청 위치">'+marks+'</div><div class="small">○ 둥근 점 = 결정, ◆ 마름모 = 후속 요청. 초록 확정 · 주황 확정(추정) · 파랑 제안 · 회색 보류/후속.</div></div>'+
+'<div class="card" style="margin-bottom:16px"><h2 class="h2">타임라인 · 구간별 시간 배분</h2><div style="display:flex;height:44px;border-radius:10px;overflow:hidden">'+secs+'</div><div class="lane" style="height:'+(lanes.length*24+4)+'px" role="group" aria-label="결정과 후속 요청 위치">'+marks+'</div><div class="small">○ 둥근 점 = 결정, ◆ 마름모 = 후속 요청. 초록 확정 · 주황 확정(추정) · 파랑 제안 · 회색 보류/후속.</div></div>'+
 '<div class="grid2" style="margin-top:0"><div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 class="h2" style="margin:0">결정 · 후속 요청</h2><div class="row" style="gap:8px">'+chips(['전체','결정','후속'],S.kind,'kind',function(c){return c})+'</div></div>'+rows+'</div>'+
-'<div class="card" aria-live="polite"><div class="row" style="justify-content:space-between;margin-bottom:4px"><h2 class="h2" style="margin:0">원문 카드</h2><span class="b '+(selItem?cls(type):'n')+'">'+esc(type)+'</span></div><div style="font-size:13px;font-weight:700;color:#1a56c4">'+esc(when)+'</div>'+quote+summary+tbl+'<div class="small" style="margin:12px 0 4px">전사 원문 (앞뒤 문맥 · 공백만 정리)</div><div class="ctx">'+ctx+'</div>'+corrHtml+'</div></div>'+
+'<div class="card" aria-live="polite"><div class="row" style="justify-content:space-between;margin-bottom:4px"><h2 class="h2" style="margin:0">원문 카드</h2><span class="b '+(selItem?cls(type):'n')+'">'+esc(type)+'</span></div><div style="font-size:13px;font-weight:700;color:#1a56c4">'+esc(when)+'</div>'+quote+summary+tbl+'<div class="small" style="margin:12px 0 4px">'+(S.mode==='raw'?'전사 원문 (앞뒤 문맥 · 공백만 정리)':'교정본 (초록 = 사람 확인, 파랑 = 자동 적용, 점선 = 확인 대기 · 마우스를 올리면 전사 원문)')+'</div><div class="ctx">'+ctx+'</div>'+corrHtml+'</div></div>'+
 '<div class="grid2"><div class="card"><h2 class="h2">구간별 시간</h2><table><tr><th>구간</th><th>시간</th><th style="width:40%">비율</th></tr>'+secRows+'</table></div>'+
-'<div class="card"><h2 class="h2">검증 상태</h2><table><tr><th>지표</th><th>상태</th></tr><tr><td>인용 정확도</td><td>인용 19건 전부 원문에 존재(자동 검사, AI가 만든 검사라 약한 증거)</td></tr><tr><td>코더 간 일치 α</td><td>미측정 · 외부 코더 2인 필요(0.800 신뢰 / 0.667 잠정은 문헌 기준)</td></tr><tr><td>팀 정정률</td><td>미측정 · 팀원 확인 필요</td></tr><tr><td>후속 이행률</td><td>미측정 · 다음 회의 전사본 필요</td></tr><tr><td>화자</td><td>미기록 · 다음 회의부터 Ro가 익명 ID로 기록 예정</td></tr></table><div class="small" style="margin-top:8px">“확인 질문”과 “전사 의심” 표시는 정규식 후보라 외부 판정 전입니다.</div></div></div>'+
+'<div class="card"><h2 class="h2">검증 상태 (python3 nodus.py audit)</h2>'+(gateRows?'<table><tr><th>게이트</th><th>결과</th><th>내용</th></tr>'+gateRows+evalRows+'</table>':'<div class="small">아직 audit 를 돌리지 않았습니다.</div>')+'<div class="small" style="margin-top:8px">게이트는 누구나 다시 돌릴 수 있는 기계 검사입니다. 분류('+esc(M.origin==='rule'?'규칙 기반 후보':'AI 1차')+')가 맞는지는 외부 코더 α·팀원 확인이 따로 필요하며 아직 미측정입니다.</div></div></div>'+
+'<div class="card" style="margin-top:16px"><h2 class="h2">전사 교정 '+allCorr.length+'건</h2>'+(corrRows?'<div style="overflow-x:auto"><table><tr><th>시각</th><th>전사 원문</th><th>교정</th><th>상태</th><th>근거</th></tr>'+corrRows+'</table></div>':'<div class="small">교정 후보가 없습니다.</div>')+'</div>'+
 '<div class="card" style="margin-top:16px"><h2 class="h2">원문 전체 탐색</h2><div class="row" style="margin-bottom:12px"><input class="s" id="q" type="search" aria-label="원문 검색" placeholder="원문에서 단어 검색 (Enter)" value="'+esc(S.q)+'"><div class="row" style="gap:8px">'+chips(['전체','C','C?','P','H','A','Q','E'],S.code,'code',function(c){return c==='전체'?c:CN[c]})+'</div></div><div class="small" style="margin-bottom:8px">'+bl2.length+'개 블록'+(q?' · “'+esc(q)+'” 검색':'')+'</div>'+brs+more+'</div>';
 var qi=document.getElementById('q');qi.addEventListener('keydown',function(e){if(e.key==='Enter')set({q:qi.value,all:false})});qi.addEventListener('change',function(){if(qi.value!==S.q)set({q:qi.value,all:false})});
 }
