@@ -623,6 +623,87 @@ def notion_md(mid, M, items, corr):
     return '\n'.join(L) + '\n'
 
 
+WIDGET_TPL = """<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{--bg:#fff;--fg:#1b1b1f;--mu:#55555f;--ln:#e4e4e9;--cd:#f7f7f9;--ac:#1a56c4;--ok:#14612f;--wr:#b36b00}
+@media(prefers-color-scheme:dark){:root{--bg:#191919;--fg:#ececf0;--mu:#a0a0aa;--ln:#33333a;--cd:#232327;--ac:#7aa7ff;--ok:#6fd08c;--wr:#f0b24a}}
+*{box-sizing:border-box}body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.6 system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif}
+h1{font-size:16px;margin:0 0 4px}.sub{color:var(--mu);font-size:12px;margin-bottom:12px}
+.kp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.kp div{flex:1 1 90px;background:var(--cd);border-radius:10px;padding:8px 12px}.kp b{display:block;font-size:20px}.kp span{font-size:11px;color:var(--mu)}
+.bar{display:flex;height:28px;border-radius:6px;overflow:hidden;border:1px solid var(--ln)}.bar i{display:block;height:100%;min-width:2px;border-right:1px solid var(--bg);opacity:.85}
+.lane{position:relative;height:44px;margin-top:4px}.lane button{position:absolute;top:3px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:2px solid var(--bg);padding:0;cursor:pointer;box-shadow:0 0 0 1px var(--mu)}
+.lane button[aria-pressed=true]{outline:3px solid var(--ac)}
+.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin:8px 0 12px}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.tabs{display:flex;gap:6px;margin:6px 0 10px}.tabs button{font:inherit;cursor:pointer;min-height:36px;padding:4px 14px;border-radius:999px;border:1px solid var(--ln);background:var(--bg);color:var(--fg)}.tabs button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.box{background:var(--cd);border-radius:10px;padding:12px 14px;min-height:96px}.q{font-size:16px;font-weight:700;line-height:1.5;margin:4px 0;overflow-wrap:anywhere}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--ln);margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--ln);vertical-align:top}th{color:var(--mu);font-weight:600}
+.fx{font-weight:700;color:var(--ok)}.sg{color:var(--wr)}
+</style></head><body>
+<h1 id="t"></h1><div class="sub" id="s"></div><div class="kp" id="k"></div>
+<div class="bar" id="bar" role="img" aria-label="구간 타임라인"></div>
+<div class="lane" id="ld" aria-label="결정"></div><div class="lane" id="lf" aria-label="후속 요청"></div>
+<div class="lg" id="lg"></div>
+<div class="tabs" id="tb"></div><div class="box" id="bx"></div><div id="tbl"></div>
+<script id="nodus-data" type="application/json">__DATA__</script>
+<script>
+(function(){
+var D=JSON.parse(document.getElementById('nodus-data').textContent);
+var PAL=['#7aa7ff','#6fd08c','#f0b24a','#c39bf0','#f08a80','#6cc7d1','#c9c96b','#9a9aa6'];
+function $(i){return document.getElementById(i)}
+function E(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function fm(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60,p=function(n){return String(n).padStart(2,'0')};return h?h+':'+p(m)+':'+p(r):m+':'+p(r)}
+$('t').textContent=D.title;$('s').textContent=D.id+' · 총 '+fm(D.total)+' · 원문 인용은 전사 원문 그대로, 교정은 별도 표';
+D.kpi.forEach(function(k){var d=E('div');d.appendChild(E('b','',k[1]));d.appendChild(E('span','',k[0]));$('k').appendChild(d)});
+var names=[];D.sections.forEach(function(s){if(names.indexOf(s.name)<0)names.push(s.name)});
+D.sections.forEach(function(s){var i=E('i');i.style.width=((s.end-s.start)/D.total*100)+'%';i.style.background=PAL[names.indexOf(s.name)%PAL.length];i.title=s.name+' '+fm(s.start)+'–'+fm(s.end);$('bar').appendChild(i)});
+names.forEach(function(n){var d=E('span');var i=E('i');i.style.background=PAL[names.indexOf(n)%PAL.length];d.appendChild(i);d.appendChild(document.createTextNode(n));$('lg').appendChild(d)});
+var sel=null,tab='결정',last={ld:-9,lf:-9},stk={ld:0,lf:0};
+function mk(it,lane,color){var b=E('button');var x=it.sec/D.total*100;stk[lane]=(x-last[lane]<2)?stk[lane]+1:0;last[lane]=x;b.style.left=x+'%';b.style.top=(3+(stk[lane]%3)*13)+'px';b.style.background=color;b.title=it.id+' '+it.ts;b.setAttribute('aria-label',it.id+' '+it.ts);b.setAttribute('aria-pressed','false');b.onclick=function(){sel=it;tab=it.kind==='결정'?'결정':'후속';draw()};it._b=b;$(lane).appendChild(b)}
+D.items.forEach(function(it){mk(it,it.kind==='결정'?'ld':'lf',it.kind==='결정'?'#1a56c4':'#b36b00')});
+function draw(){
+D.items.forEach(function(it){it._b.setAttribute('aria-pressed',it===sel?'true':'false')});
+var tb=$('tb');tb.textContent='';['결정','후속','교정'].forEach(function(n){var b=E('button','',n);b.setAttribute('aria-pressed',n===tab?'true':'false');b.onclick=function(){tab=n;draw()};tb.appendChild(b)});
+var bx=$('bx');bx.textContent='';
+if(sel){bx.appendChild(E('span','tag',sel.id+' · '+(sel.type||sel.kind)));bx.appendChild(E('span','',sel.ts));bx.appendChild(E('div','q','“'+sel.quote+'”'));bx.appendChild(E('div','',sel.summary));if(sel.q)bx.appendChild(E('div','sub','확인 질문: '+sel.q))}
+else bx.appendChild(E('div','sub','타임라인의 점을 누르면 원문 인용이 나옵니다.'));
+var t=$('tbl');t.textContent='';var tbl=E('table');var rows,head;
+if(tab==='교정'){head=['시각','전사 원문','교정','상태'];rows=D.corr.map(function(c){return [c.ts,c.raw,c.fix||'?',c.applied?'적용':'확인 대기']})}
+else{head=['ID','시각','내용','유형'];rows=D.items.filter(function(i){return i.kind===tab}).map(function(i){return [i.id,i.ts,i.summary,i.type||'']})}
+var tr=E('tr');head.forEach(function(h){tr.appendChild(E('th','',h))});tbl.appendChild(tr);
+rows.forEach(function(r){var tr=E('tr');r.forEach(function(c,j){var td=E('td','',c);if(tab==='교정'&&j===2)td.className=r[3]==='적용'?'fx':'sg';tr.appendChild(td)});tbl.appendChild(tr)});
+t.appendChild(tbl)}
+draw();
+})();
+</script></body></html>
+"""
+
+
+def widget_html(mid, M, items, corr):
+    """Notion HTML 블록용 한 파일 위젯. 외부 주소·CDN·fetch 없이 데이터를 안에 넣는다(샌드박스에서 막히므로).
+    인용은 전사 원문 그대로, 교정은 별도 표로만 보여준다."""
+    its = [i for i in items if i['t'] == mid]
+    cs = [c for c in corr if c['t'] == mid]
+    cnt = Counter(i['type'] for i in its if i['kind'] == '결정')
+    secs = []
+    for s in M['sections']:
+        if secs and secs[-1]['name'] == s['name'] and secs[-1]['end'] == s['start']:
+            secs[-1]['end'] = s['end']
+        else:
+            secs.append({'name': s['name'], 'start': s['start'], 'end': s['end']})
+    data = {
+        'id': mid, 'title': M['title'], 'total': M['total'], 'sections': secs,
+        'kpi': [['회의 시간', fmt(M['total'])], ['결정 항목', str(sum(cnt.values()))], ['후속 요청', str(sum(i['kind'] == '후속' for i in its))],
+                ['교정 적용', str(sum(c['st'] in APPLIED for c in cs))], ['확인 대기', str(sum(c['st'] in ('suggest', 'suspect') for c in cs))]],
+        'items': [{k: i.get(k, '') for k in ('id', 'kind', 'type', 'ts', 'sec', 'summary', 'quote', 'q')} for i in its],
+        'corr': [{'ts': c['ts'], 'raw': c['raw'], 'fix': c['fix'], 'applied': c['st'] in APPLIED} for c in cs],
+    }
+    blob = json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/').replace('<!--', '<\\!--')
+    return WIDGET_TPL.replace('__TITLE__', md(M['title']).replace('<', '&lt;')).replace('__DATA__', blob)
+
+
 def cmd_build(quiet=False):
     D = {'order': meetings(), 'meetings': {}, 'items': [], 'corr': []}
     for mid in D['order']:
@@ -632,6 +713,8 @@ def cmd_build(quiet=False):
         D['corr'] += corr
         with open(mpath(mid, 'notion.md'), 'w', encoding='utf-8') as f:
             f.write(notion_md(mid, M, items, corr))
+        with open(mpath(mid, 'notion_widget.html'), 'w', encoding='utf-8') as f:
+            f.write(widget_html(mid, M, items, corr))
     D['audit'] = jload(os.path.join(BASE, 'data', 'audit.json'), {})
     jsave(os.path.join(BASE, 'data', 'viz_data.json'), D, compact=True)
     with open(os.path.join(BASE, 'data.js'), 'w', encoding='utf-8') as f:
@@ -703,6 +786,22 @@ def cmd_audit():
         if secs != D['meetings'][mid]['total']:
             miss.append(f'{mid} 간트 합 {secs}')
     out['G8 Notion 일치'] = [not miss, 'Notion 마크다운에 모든 항목·인용이 있고 간트 구간 합 = 회의 길이' + (f' · 누락 {miss}' if miss else '')]
+    wbad = []
+    for mid in meetings():
+        with open(mpath(mid, 'notion_widget.html'), encoding='utf-8') as f:
+            wh = f.read()
+        m = re.search(r'<script id="nodus-data" type="application/json">(.*?)</script>', wh, re.S)
+        wd = json.loads(m.group(1).replace('<\\/', '</').replace('<\\!--', '<!--')) if m else None
+        rest = wh.replace(m.group(0), '') if m else wh
+        if re.search(r'(?:src|href)\s*=\s*["\']?(?:https?:)?//|@import|url\(\s*["\']?https?:|\bfetch\(|XMLHttpRequest|WebSocket|<link\b|<iframe\b', rest):
+            wbad.append(f'{mid} 외부 참조')
+        if not wd or [i['id'] for i in wd['items']] != [i['id'] for i in D['items'] if i['t'] == mid] or any(i['quote'] != x['quote'] for i, x in zip(wd['items'], [x for x in D['items'] if x['t'] == mid])):
+            wbad.append(f'{mid} 항목·인용 불일치')
+        if wd and sum(s['end'] - s['start'] for s in wd['sections']) != D['meetings'][mid]['total']:
+            wbad.append(f'{mid} 구간 합')
+        if len(wh.encode('utf-8')) > 500_000:
+            wbad.append(f'{mid} 500KB 초과')
+    out['G10 위젯 자기완결'] = [not wbad, 'Notion HTML 위젯이 외부 주소·네트워크 호출 없이 한 파일이고, 항목·인용·구간 합이 뷰어 데이터와 같으며 500KB 이하' + (f' · {wbad}' if wbad else '')]
     legacy = jload(os.path.join(BASE, 'data', 'blocks.json'))
     if legacy:
         same = all([(b['ts'], b['text']) for b in legacy[m]] == [(b['ts'], b['text']) for b in jload(mpath(m, 'blocks.json'))] for m in legacy if m in meetings())

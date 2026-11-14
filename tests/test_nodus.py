@@ -139,5 +139,13 @@ try:
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
+# G10 위젯: 외부 호출이 끼어들면 audit 이 FAIL 을 내야 한다
+d = sandbox()
+src = open(os.path.join(d, 'nodus.py'), encoding='utf-8').read().replace('(function(){', '(function(){fetch("https://x.invalid");', 1)
+open(os.path.join(d, 'nodus.py'), 'w', encoding='utf-8').write(src)
+code, out = run(d, 'audit')
+check('게이트 G10: 위젯에 fetch 삽입 → FAIL', code != 0 and 'FAIL' in out and 'G10' in out, out[-300:])
+shutil.rmtree(d)
+
 print(f'\n{"모두 통과" if not FAILS else "실패 " + str(len(FAILS)) + "건: " + ", ".join(FAILS)}')
 sys.exit(1 if FAILS else 0)

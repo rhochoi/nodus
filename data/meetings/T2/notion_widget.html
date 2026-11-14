@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T2 회의</title>
+<style>
+:root{--bg:#fff;--fg:#1b1b1f;--mu:#55555f;--ln:#e4e4e9;--cd:#f7f7f9;--ac:#1a56c4;--ok:#14612f;--wr:#b36b00}
+@media(prefers-color-scheme:dark){:root{--bg:#191919;--fg:#ececf0;--mu:#a0a0aa;--ln:#33333a;--cd:#232327;--ac:#7aa7ff;--ok:#6fd08c;--wr:#f0b24a}}
+*{box-sizing:border-box}body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.6 system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif}
+h1{font-size:16px;margin:0 0 4px}.sub{color:var(--mu);font-size:12px;margin-bottom:12px}
+.kp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.kp div{flex:1 1 90px;background:var(--cd);border-radius:10px;padding:8px 12px}.kp b{display:block;font-size:20px}.kp span{font-size:11px;color:var(--mu)}
+.bar{display:flex;height:28px;border-radius:6px;overflow:hidden;border:1px solid var(--ln)}.bar i{display:block;height:100%;min-width:2px;border-right:1px solid var(--bg);opacity:.85}
+.lane{position:relative;height:44px;margin-top:4px}.lane button{position:absolute;top:3px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:2px solid var(--bg);padding:0;cursor:pointer;box-shadow:0 0 0 1px var(--mu)}
+.lane button[aria-pressed=true]{outline:3px solid var(--ac)}
+.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin:8px 0 12px}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.tabs{display:flex;gap:6px;margin:6px 0 10px}.tabs button{font:inherit;cursor:pointer;min-height:36px;padding:4px 14px;border-radius:999px;border:1px solid var(--ln);background:var(--bg);color:var(--fg)}.tabs button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.box{background:var(--cd);border-radius:10px;padding:12px 14px;min-height:96px}.q{font-size:16px;font-weight:700;line-height:1.5;margin:4px 0;overflow-wrap:anywhere}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--ln);margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--ln);vertical-align:top}th{color:var(--mu);font-weight:600}
+.fx{font-weight:700;color:var(--ok)}.sg{color:var(--wr)}
+</style></head><body>
+<h1 id="t"></h1><div class="sub" id="s"></div><div class="kp" id="k"></div>
+<div class="bar" id="bar" role="img" aria-label="구간 타임라인"></div>
+<div class="lane" id="ld" aria-label="결정"></div><div class="lane" id="lf" aria-label="후속 요청"></div>
+<div class="lg" id="lg"></div>
+<div class="tabs" id="tb"></div><div class="box" id="bx"></div><div id="tbl"></div>
+<script id="nodus-data" type="application/json">{"id":"T2","title":"T2 회의","total":5019,"sections":[{"name":"체크인·도입","start":0,"end":703},{"name":"개인 작성","start":703,"end":1790},{"name":"각자 발표","start":1790,"end":2657},{"name":"수렴 시도","start":2657,"end":2979},{"name":"슬로건 논의","start":2979,"end":4693},{"name":"공유방식 확정","start":4693,"end":4923},{"name":"후속·잡담","start":4923,"end":5019}],"kpi":[["회의 시간","1:23:39"],["결정 항목","5"],["후속 요청","5"],["교정 적용","7"],["확인 대기","7"]],"items":[{"id":"T2-D1","kind":"결정","type":"제안","ts":"44:47","sec":2687,"summary":"팀 정체성 키워드 수렴(다양성·시야 활용)","quote":"이렇게 수렴되는 게 조금 괜찮은지?","q":"있음(4회 재질문: 44:47/45:50/46:23/49:05)"},{"id":"T2-D2","kind":"결정","type":"제안","ts":"53:15","sec":3195,"summary":"브랜딩 슬로건을 만드는 것","quote":"브랜딩 슬로번을 만드는 것은 다들 괜찮으신가요?","q":"있음"},{"id":"T2-D3","kind":"결정","type":"확정(추정)","ts":"1:17:08","sec":4628,"summary":"공모전은 하지 않음","quote":"저희는 안 만들었죠","q":"있음(1:17:08 \"만장일 수인가요?\"[ASR])"},{"id":"T2-D4","kind":"결정","type":"확정","ts":"1:21:32","sec":4892,"summary":"금요일까지 각자 한 문장+맥락 공유, 다음 TM에서 정함","quote":"3, 2, 1. 없어요?","q":"있음(\"손!\")"},{"id":"T2-D5","kind":"결정","type":"확정","ts":"1:22:35","sec":4955,"summary":"세션 후 넥스트 액션 확인","quote":"방금 넥스트잭체니 정해졌죠?네","q":"있음"},{"id":"T2-A1","kind":"후속","type":"후속 요청","ts":"1:19:49","sec":4789,"summary":"슬로건 한 문장+맥락 공유","quote":"그러면 일단은 이번 주 금요일까지","q":""},{"id":"T2-A2","kind":"후속","type":"후속 요청","ts":"1:20:25","sec":4825,"summary":"다음 TM 때 맥락 공유·결정","quote":"다음주에 TM 때 맥락 공유하고 실시간으로 좀 의견 나누면서","q":""},{"id":"T2-A3","kind":"후속","type":"후속 요청","ts":"47:32","sec":2852,"summary":"퓨처 게임 과제","quote":"여러분 내일 퓨처 게임 과제 해오시면 돼요","q":""},{"id":"T2-A4","kind":"후속","type":"후속 요청","ts":"1:22:35","sec":4955,"summary":"\"사이트 비집 그거\"(ASR 의심)","quote":"금요일까지 사이트 비집 그거 하셔야 됩니다","q":""},{"id":"T2-A5","kind":"후속","type":"후속 요청","ts":"1:23:07","sec":4987,"summary":"섭외","quote":"월요일까지는 섭외를 해야 된다네","q":""}],"corr":[{"ts":"8:24","raw":"닿을지","fix":"담을지","applied":false},{"ts":"38:16","raw":"먹고자","fix":"얻고자","applied":false},{"ts":"46:23","raw":"두 간","fix":"두 명","applied":false},{"ts":"46:23","raw":"두 간","fix":"두 명","applied":false},{"ts":"50:09","raw":"분장","fix":"문장","applied":false},{"ts":"53:15","raw":"슬로번","fix":"슬로건","applied":true},{"ts":"55:11","raw":"러닝전이","fix":"러닝저니","applied":true},{"ts":"56:14","raw":"러닝존이","fix":"러닝저니","applied":false},{"ts":"1:17:08","raw":"만장일 수","fix":"만장일치","applied":true},{"ts":"1:17:38","raw":"지갑띠","fix":null,"applied":false},{"ts":"1:18:13","raw":"한 분당","fix":"한 문장","applied":true},{"ts":"1:18:13","raw":"단척방","fix":"단톡방","applied":true},{"ts":"1:22:35","raw":"넥스트잭체니","fix":"넥스트 액션","applied":true},{"ts":"1:22:35","raw":"사이트 비집 그거","fix":"site visit","applied":true}]}</script>
+<script>
+(function(){
+var D=JSON.parse(document.getElementById('nodus-data').textContent);
+var PAL=['#7aa7ff','#6fd08c','#f0b24a','#c39bf0','#f08a80','#6cc7d1','#c9c96b','#9a9aa6'];
+function $(i){return document.getElementById(i)}
+function E(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function fm(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60,p=function(n){return String(n).padStart(2,'0')};return h?h+':'+p(m)+':'+p(r):m+':'+p(r)}
+$('t').textContent=D.title;$('s').textContent=D.id+' · 총 '+fm(D.total)+' · 원문 인용은 전사 원문 그대로, 교정은 별도 표';
+D.kpi.forEach(function(k){var d=E('div');d.appendChild(E('b','',k[1]));d.appendChild(E('span','',k[0]));$('k').appendChild(d)});
+var names=[];D.sections.forEach(function(s){if(names.indexOf(s.name)<0)names.push(s.name)});
+D.sections.forEach(function(s){var i=E('i');i.style.width=((s.end-s.start)/D.total*100)+'%';i.style.background=PAL[names.indexOf(s.name)%PAL.length];i.title=s.name+' '+fm(s.start)+'–'+fm(s.end);$('bar').appendChild(i)});
+names.forEach(function(n){var d=E('span');var i=E('i');i.style.background=PAL[names.indexOf(n)%PAL.length];d.appendChild(i);d.appendChild(document.createTextNode(n));$('lg').appendChild(d)});
+var sel=null,tab='결정',last={ld:-9,lf:-9},stk={ld:0,lf:0};
+function mk(it,lane,color){var b=E('button');var x=it.sec/D.total*100;stk[lane]=(x-last[lane]<2)?stk[lane]+1:0;last[lane]=x;b.style.left=x+'%';b.style.top=(3+(stk[lane]%3)*13)+'px';b.style.background=color;b.title=it.id+' '+it.ts;b.setAttribute('aria-label',it.id+' '+it.ts);b.setAttribute('aria-pressed','false');b.onclick=function(){sel=it;tab=it.kind==='결정'?'결정':'후속';draw()};it._b=b;$(lane).appendChild(b)}
+D.items.forEach(function(it){mk(it,it.kind==='결정'?'ld':'lf',it.kind==='결정'?'#1a56c4':'#b36b00')});
+function draw(){
+D.items.forEach(function(it){it._b.setAttribute('aria-pressed',it===sel?'true':'false')});
+var tb=$('tb');tb.textContent='';['결정','후속','교정'].forEach(function(n){var b=E('button','',n);b.setAttribute('aria-pressed',n===tab?'true':'false');b.onclick=function(){tab=n;draw()};tb.appendChild(b)});
+var bx=$('bx');bx.textContent='';
+if(sel){bx.appendChild(E('span','tag',sel.id+' · '+(sel.type||sel.kind)));bx.appendChild(E('span','',sel.ts));bx.appendChild(E('div','q','“'+sel.quote+'”'));bx.appendChild(E('div','',sel.summary));if(sel.q)bx.appendChild(E('div','sub','확인 질문: '+sel.q))}
+else bx.appendChild(E('div','sub','타임라인의 점을 누르면 원문 인용이 나옵니다.'));
+var t=$('tbl');t.textContent='';var tbl=E('table');var rows,head;
+if(tab==='교정'){head=['시각','전사 원문','교정','상태'];rows=D.corr.map(function(c){return [c.ts,c.raw,c.fix||'?',c.applied?'적용':'확인 대기']})}
+else{head=['ID','시각','내용','유형'];rows=D.items.filter(function(i){return i.kind===tab}).map(function(i){return [i.id,i.ts,i.summary,i.type||'']})}
+var tr=E('tr');head.forEach(function(h){tr.appendChild(E('th','',h))});tbl.appendChild(tr);
+rows.forEach(function(r){var tr=E('tr');r.forEach(function(c,j){var td=E('td','',c);if(tab==='교정'&&j===2)td.className=r[3]==='적용'?'fx':'sg';tr.appendChild(td)});tbl.appendChild(tr)});
+t.appendChild(tbl)}
+draw();
+})();
+</script></body></html>
