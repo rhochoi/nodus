@@ -1,5 +1,6 @@
 """data/blocks.json + facts.json + build_xlsx.py의 코딩 규칙 -> data/viz_data.json, data.js (뷰어 데이터)."""
-import json,re,os
+import json,re,os,sys
+sys.exit("export_viz.py 는 v3 용이다. 뷰어 데이터는 이제 `python3 nodus.py build` 가 만든다(이 스크립트를 돌리면 data.js 가 옛 형식으로 덮인다).")
 BASE=os.path.dirname(os.path.abspath(__file__))+'/..'
 B=json.load(open(BASE+'/data/blocks.json')); F=json.load(open(BASE+'/data/facts.json'))
 src=open(BASE+'/scripts/build_xlsx.py').read()
